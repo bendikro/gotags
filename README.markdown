@@ -54,9 +54,14 @@ system.  Then do the following:
 ```
 $ git clone git://github.com/jimweirich/gotags.git
 $ cd gotags
-$ go install onestepback.org/gotags
-$ cp bin/gotags SOMEWHERE_IN_YOUR_PATH
+# Build
+$ rake
+# Install into $GOPATH/bin
+$ rake install
+# Clean project:
+$ rake clobber
 ```
+
 
 See the [Links Section](#links) for links to binary executables.
 

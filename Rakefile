@@ -1,5 +1,7 @@
 require 'rake/clean'
 
+ORIG_GOPATH = ENV['GOPATH']
+
 CLOBBER.include("bin", "TAGS", "dist", "testdata/TAGS")
 
 PROG = "bin/gotags"
@@ -34,6 +36,13 @@ task :run => :build do
 end
 
 file "bin/gotags" => :build
+
+desc "Build the gotags program"
+task :install => :build do
+  ENV['GOPATH'] = "#{ORIG_GOPATH}"
+  sh "cp bin/gotags $GOPATH/bin/"
+  puts "installed #{PROG} into #{ORIG_GOPATH}"
+end
 
 TEST_FILES = FileList['testdata/**/*'].exclude("testdata/TAGS")
 
