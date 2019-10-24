@@ -11,6 +11,7 @@ import (
 var showVerbose bool = false	// Show verbose output
 
 func processFile(writer *bufio.Writer, path string) {
+	// fmt.Printf("processFile - path: '%s'\n", path)
 	tag := NewTag(path)
 	ext := filepath.Ext(path)
 	if ext == ".rake" || filepath.Base(path) == "Rakefile"  {
@@ -39,7 +40,11 @@ func processFile(writer *bufio.Writer, path string) {
 }
 
 func walkDir(writer *bufio.Writer, path string, info os.FileInfo, err error) error {
-	if info != nil && ! info.IsDir() {
+	// fmt.Printf("walkDir -  path: '%s'\n", path)
+	if info != nil && !info.IsDir() {
+		if len(exclude) != 0 {
+			// fmt.Printf("Exclude is: %s\n", exclude)
+		}
 		processFile(writer, path)
 	}
 	return nil
@@ -47,15 +52,45 @@ func walkDir(writer *bufio.Writer, path string, info os.FileInfo, err error) err
 
 var version = "1.2.0"
 
+
+type multiValueFlags []string
+
+func (i *multiValueFlags) String() string {
+	buf := ""
+	for _, v := range *i {
+		if buf != "" {
+			buf += ", "
+		}
+		buf += v
+	}
+	return fmt.Sprintf("[%s]", buf)
+}
+
+func (i *multiValueFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
+var (
+	showVersion bool = false
+	showHelp    bool = false
+	exclude     multiValueFlags
+	excludeDir  multiValueFlags
+)
+
 func main() {
-	var showVersion bool = false
-	var showHelp    bool = false
 
 	flag.BoolVar(&showVersion, "v",    false, "Display the version number")
 	flag.BoolVar(&showVerbose, "V",    false, "Display files as processed")
 	flag.BoolVar(&showHelp,    "h",    false, "Display help text")
 	flag.BoolVar(&showHelp,    "help", false, "Display help text")
+	flag.Var(&exclude,         "exclude", "Exclude files pattern")
+	flag.Var(&excludeDir,      "exclude-dir", "Exclude dirs pattern")
+
 	flag.Parse()
+
+	fmt.Printf("excludeDir: %+v\n", excludeDir)
+	// fmt.Printf("exclude: %+v\n", exclude)
 
 	if showVersion {
 		fmt.Println(version)
@@ -77,6 +112,24 @@ func main() {
 	defer writer.Flush()
 
 	walkFunc := func(path string, info os.FileInfo, err error) error {
+		// fmt.Printf("walkFunc - path: '%s'\n", path)
+		// fmt.Printf("walkDir - info: '%+v'\n", info)
+
+		if info.IsDir() {
+
+			if len(excludeDir) > 0 {
+
+				// fmt.Printf("info.Name(): '%s'\n", info.Name())
+				for _, excDir := range excludeDir {
+					// fmt.Printf("excDir: '%s'\n", excDir)
+					if excDir == info.Name() {
+						fmt.Printf("Excluding dir '%s'\n", excDir)
+						return filepath.SkipDir
+					}
+				}
+			}
+
+		}
 		return walkDir(writer, path, info, err)
 	}
 
